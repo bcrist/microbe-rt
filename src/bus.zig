@@ -43,10 +43,9 @@ pub fn Bus(comptime bus_name: []const u8, comptime pads: anytype, comptime confi
         var pad_reservation_name = "Bus " ++ bus_name;
 
         return struct {
-            const Self = @This();
             pub const State = RawInt;
 
-            pub fn init() Self {
+            pub fn init() void {
                 const cs = microbe.interrupts.enterCriticalSection();
                 defer cs.leave();
 
@@ -68,10 +67,9 @@ pub fn Bus(comptime bus_name: []const u8, comptime pads: anytype, comptime confi
                         chip.gpio.configureAsInput(pad_ids);
                     },
                 }
-                return .{};
             }
 
-            pub fn deinit(_: Self) void {
+            pub fn deinit() void {
                 const cs = microbe.interrupts.enterCriticalSection();
                 defer cs.leave();
 
@@ -83,10 +81,10 @@ pub fn Bus(comptime bus_name: []const u8, comptime pads: anytype, comptime confi
             }
 
             pub usingnamespace if (config.mode != .output) struct {
-                pub fn read(_: Self) State {
+                pub fn read() State {
                     var raw = RawInt{};
                     if (@hasDecl(chip.gpio, "readInputPort") and @hasDecl(chip.gpio, "getIOPorts")) {
-                        inline for (chip.gpio.getIOPorts(pad_ids)) |port| {
+                        inline for (comptime chip.gpio.getIOPorts(pad_ids)) |port| {
                             const port_state = chip.gpio.readInputPort(port);
                             inline for (pad_ids, 0..) |pad, raw_bit| {
                                 if (chip.gpio.getIOPort(pad) == port) {
@@ -106,13 +104,13 @@ pub fn Bus(comptime bus_name: []const u8, comptime pads: anytype, comptime confi
             } else struct {};
 
             pub usingnamespace if (config.mode == .bidirectional) struct {
-                pub fn setDirection(_: Self, dir: Direction) void {
+                pub fn setDirection(dir: Direction) void {
                     switch (dir) {
                         .input => chip.gpio.configureAsInput(pad_ids),
                         .output => chip.gpio.configureAsOutput(pad_ids),
                     }
                 }
-                pub fn getDirection(_: Self) Direction {
+                pub fn getDirection() Direction {
                     if (chip.gpio.isOutput(pad_ids[0])) {
                         return .output;
                     } else {
@@ -122,10 +120,10 @@ pub fn Bus(comptime bus_name: []const u8, comptime pads: anytype, comptime confi
             } else struct {};
 
             pub usingnamespace if (config.mode != .input) struct {
-                pub fn get(_: Self) State {
-                    var raw = RawInt{};
+                pub fn get() State {
+                    var raw: RawInt = 0;
                     if (@hasDecl(chip.gpio, "readOutputPort") and @hasDecl(chip.gpio, "getIOPorts")) {
-                        inline for (chip.gpio.getIOPorts(pad_ids)) |port| {
+                        inline for (comptime chip.gpio.getIOPorts(pad_ids)) |port| {
                             const port_state = chip.gpio.readOutputPort(port);
                             inline for (pad_ids, 0..) |pad, raw_bit| {
                                 if (chip.gpio.getIOPort(pad) == port) {
@@ -143,7 +141,7 @@ pub fn Bus(comptime bus_name: []const u8, comptime pads: anytype, comptime confi
                     return @as(State, @bitCast(raw));
                 }
 
-                pub fn modify(_: Self, state: State) void {
+                pub fn modify(state: State) void {
                     const raw = @as(RawInt, @bitCast(state));
                     if (@hasDecl(chip.gpio, "modifyOutputPort") and @hasDecl(chip.gpio, "getIOPorts")) {
                         inline for (comptime chip.gpio.getIOPorts(pad_ids)) |port| {
@@ -166,14 +164,14 @@ pub fn Bus(comptime bus_name: []const u8, comptime pads: anytype, comptime confi
                         @compileError("not implemented!");
                     }
                 }
-                pub inline fn modifyInline(self: Self, state: State) void {
-                    @call(.{ .modifier = .always_inline }, modify, .{ self, state });
+                pub inline fn modifyInline(state: State) void {
+                    @call(.{ .modifier = .always_inline }, modify, .{state});
                 }
 
-                pub fn setBits(_: Self, state: State) void {
+                pub fn setBits(state: State) void {
                     const raw = @as(RawInt, @bitCast(state));
                     if (@hasDecl(chip.gpio, "modifyOutputPort") and @hasDecl(chip.gpio, "getIOPorts")) {
-                        inline for (chip.gpio.getIOPorts(pad_ids)) |port| {
+                        inline for (comptime chip.gpio.getIOPorts(pad_ids)) |port| {
                             var to_set: chip.gpio.PortDataType = 0;
                             inline for (pad_ids, 0..) |pad, raw_bit| {
                                 if (chip.gpio.getIOPort(pad) == port) {
@@ -189,18 +187,18 @@ pub fn Bus(comptime bus_name: []const u8, comptime pads: anytype, comptime confi
                         @compileError("not implemented!");
                     }
                 }
-                pub inline fn setBitsInline(self: Self, state: State) void {
-                    @call(.{ .modifier = .always_inline }, setBits, .{ self, state });
+                pub inline fn setBitsInline(state: State) void {
+                    @call(.{ .modifier = .always_inline }, setBits, .{state});
                 }
 
-                pub fn clearBits(_: Self, state: State) void {
+                pub fn clearBits(state: State) void {
                     const raw = @as(RawInt, @bitCast(state));
                     if (@hasDecl(chip.gpio, "modifyOutputPort") and @hasDecl(chip.gpio, "getIOPorts")) {
-                        inline for (chip.gpio.getIOPorts(pad_ids)) |port| {
+                        inline for (comptime chip.gpio.getIOPorts(pad_ids)) |port| {
                             var to_clear: chip.gpio.PortDataType = 0;
                             inline for (pad_ids, 0..) |pad, raw_bit| {
                                 if (chip.gpio.getIOPort(pad) == port) {
-                                    if (0 == (raw & (1 << raw_bit))) {
+                                    if (0 != (raw & (1 << raw_bit))) {
                                         to_clear |= (1 << chip.gpio.getOffset(pad));
                                     }
                                 }
@@ -212,8 +210,8 @@ pub fn Bus(comptime bus_name: []const u8, comptime pads: anytype, comptime confi
                         @compileError("not implemented!");
                     }
                 }
-                pub inline fn clearBitsInline(self: Self, state: State) void {
-                    @call(.{ .modifier = .always_inline }, clearBits, .{ self, state });
+                pub inline fn clearBitsInline(state: State) void {
+                    @call(.{ .modifier = .always_inline }, clearBits, .{state});
                 }
             } else struct {};
         };
