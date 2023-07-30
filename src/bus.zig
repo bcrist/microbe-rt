@@ -1,6 +1,5 @@
 const std = @import("std");
-const microbe = @import("root");
-const chip = microbe.chip;
+const chip = @import("chip");
 
 pub const Mode = enum {
     input,
@@ -41,6 +40,7 @@ pub fn Bus(comptime bus_name: []const u8, comptime pads: anytype, comptime confi
         }
 
         var pad_reservation_name = "Bus " ++ bus_name;
+        _ = pad_reservation_name;
 
         return struct {
             pub const State = RawInt;
