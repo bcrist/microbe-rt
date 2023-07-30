@@ -1,4 +1,5 @@
 const std = @import("std");
+const microbe = @import("microbe");
 const chip = @import("chip");
 
 pub const Mode = enum {
@@ -40,13 +41,12 @@ pub fn Bus(comptime bus_name: []const u8, comptime pads: anytype, comptime confi
         }
 
         var pad_reservation_name = "Bus " ++ bus_name;
-        _ = pad_reservation_name;
 
         return struct {
             pub const State = RawInt;
 
             pub fn init() void {
-                const cs = microbe.interrupts.enterCriticalSection();
+                const cs = chip.interrupts.enterCriticalSection();
                 defer cs.leave();
 
                 microbe.pads.reserve(pad_ids, pad_reservation_name);
@@ -70,7 +70,7 @@ pub fn Bus(comptime bus_name: []const u8, comptime pads: anytype, comptime confi
             }
 
             pub fn deinit() void {
-                const cs = microbe.interrupts.enterCriticalSection();
+                const cs = chip.interrupts.enterCriticalSection();
                 defer cs.leave();
 
                 if (config.termination != .float) {
