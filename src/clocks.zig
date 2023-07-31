@@ -17,7 +17,7 @@
 /// be accessed through `getFrequency(domain)` and `getSource(domain)`.
 
 const std = @import("std");
-const chip = @import("chip");
+const chip = @import("root").chip;
 
 /// Tick period may vary, but it should be between 1us and 1ms (1kHz to 1MHz).
 /// This means rollovers will happen no more frequently than once every 70 minutes,

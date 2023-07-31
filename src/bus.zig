@@ -1,6 +1,7 @@
 const std = @import("std");
-const microbe = @import("microbe");
-const chip = @import("chip");
+const chip = @import("root").chip;
+const CriticalSection = @import("CriticalSection.zig");
+const pads = @import("pads.zig");
 
 pub const Mode = enum {
     input,
@@ -25,9 +26,9 @@ pub const Config = struct {
     termination: TerminationMode = TerminationMode.default,
 };
 
-pub fn Bus(comptime bus_name: []const u8, comptime pads: anytype, comptime config: Config) type {
+pub fn Bus(comptime bus_name: []const u8, comptime pads_struct: anytype, comptime config: Config) type {
     comptime {
-        const PadsType = @TypeOf(pads);
+        const PadsType = @TypeOf(pads_struct);
         const pads_struct_info = @typeInfo(PadsType).Struct;
 
         if (!pads_struct_info.is_tuple) {
@@ -36,7 +37,7 @@ pub fn Bus(comptime bus_name: []const u8, comptime pads: anytype, comptime confi
 
         var pad_ids: []const PadID = &[_]PadID{};
         var RawInt = std.meta.Int(.unsigned, pads_struct_info.fields.len);
-        inline for (pads) |pad| {
+        inline for (pads_struct) |pad| {
             pad_ids = pad_ids ++ [_]PadID{pad};
         }
 
@@ -46,10 +47,10 @@ pub fn Bus(comptime bus_name: []const u8, comptime pads: anytype, comptime confi
             pub const State = RawInt;
 
             pub fn init() void {
-                const cs = chip.interrupts.enterCriticalSection();
+                const cs = CriticalSection.enter();
                 defer cs.leave();
 
-                microbe.pads.reserve(pad_ids, pad_reservation_name);
+                pads.reserve(pad_ids, pad_reservation_name);
                 chip.gpio.ensurePortsEnabled(pad_ids);
                 chip.gpio.configureTermination(pad_ids, config.termination);
                 switch (config.mode) {
@@ -70,14 +71,14 @@ pub fn Bus(comptime bus_name: []const u8, comptime pads: anytype, comptime confi
             }
 
             pub fn deinit() void {
-                const cs = chip.interrupts.enterCriticalSection();
+                const cs = CriticalSection.enter();
                 defer cs.leave();
 
                 if (config.termination != .float) {
                     chip.gpio.configureTermination(pad_ids, .float);
                 }
                 chip.gpio.configureAsUnused(pad_ids);
-                microbe.pads.release(pad_ids, pad_reservation_name);
+                pads.release(pad_ids, pad_reservation_name);
             }
 
             pub usingnamespace if (config.mode != .output) struct {

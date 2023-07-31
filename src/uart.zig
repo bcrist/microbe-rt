@@ -134,7 +134,7 @@
 // a struct named `ext` within the Impl type.  This can be used to add interrupt/DMA interface points.
 
 const std = @import("std");
-const chip = @import("chip");
+const chip = @import("root").chip;
 
 pub const Config = chip.uart.Config;
 

@@ -1,5 +1,5 @@
 const std = @import("std");
-const chip = @import("chip");
+const chip = @import("root").chip;
 
 pub fn configureInterruptEnables(comptime config: anytype) void {
     const info = @typeInfo(@TypeOf(config));

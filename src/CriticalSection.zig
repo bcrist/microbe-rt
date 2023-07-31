@@ -1,4 +1,4 @@
-const chip = @import("chip");
+const chip = @import("root").chip;
 
 const CriticalSection = @This();
 

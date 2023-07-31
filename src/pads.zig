@@ -1,7 +1,7 @@
 const std = @import("std");
 const builtin = @import("builtin");
 
-pub const PadID = @import("chip").PadID;
+pub const PadID = @import("root").chip.PadID;
 
 pub const reserve = impl.reserve;
 pub const release = impl.release;

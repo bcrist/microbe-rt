@@ -1,7 +1,8 @@
 const std = @import("std");
-const microbe = @import("root");
-const chip = microbe.chip;
-const clock = microbe.clock;
+const chip = @import("root").chip;
+const pads = @import("pads.zig");
+const Tick = @import("clocks.zig").Tick;
+const Microtick = @import("clocks.zig").Microtick;
 
 pub const PadID = chip.gpio.PadID;
 
@@ -57,7 +58,7 @@ pub fn Adapter(comptime config: Config) type {
             config.tdo,
         };
 
-        const clock_half_period_microticks = clock.divRound(clock.getFrequency(.microtick), config.max_frequency_hz * 2);
+        const clock_half_period_microticks = @divTrunc(chip.clocks.getFrequency(.microtick) + config.max_frequency_hz, config.max_frequency_hz * 2);
 
         return struct {
             const AdapterSelf = @This();
@@ -67,7 +68,7 @@ pub fn Adapter(comptime config: Config) type {
             state: State,
 
             pub fn init() AdapterSelf {
-                microbe.pads.reserve(pad_ids, "JTAG");
+                pads.reserve(pad_ids, "JTAG");
                 chip.gpio.ensurePortsEnabled(pad_ids);
                 chip.gpio.configureSlewRate(outputs, .very_slow);
                 chip.gpio.configureDriveMode(outputs, .push_pull);
@@ -78,7 +79,7 @@ pub fn Adapter(comptime config: Config) type {
 
             pub fn deinit(_: AdapterSelf) void {
                 chip.gpio.configureAsUnused(pad_ids);
-                microbe.pads.release(pad_ids, "JTAG");
+                pads.release(pad_ids, "JTAG");
             }
 
             pub fn idle(self: *AdapterSelf, clocks: u32) void {
@@ -90,11 +91,11 @@ pub fn Adapter(comptime config: Config) type {
                 }
             }
 
-            pub fn idleUntil(self: *AdapterSelf, tick: clock.Tick, min_clocks: u32) u32 {
+            pub fn idleUntil(self: *AdapterSelf, tick: Tick, min_clocks: u32) u32 {
                 self.changeState(.idle);
                 chip.gpio.writeOutput(config.tms, 0);
                 var clocks: u32 = 0;
-                while (clock.current_tick.isBefore(tick)) {
+                while (chip.clocks.currentTick().isBefore(tick)) {
                     _ = self.clockPulse();
                     clocks += 1;
                 }
@@ -245,12 +246,12 @@ pub fn Adapter(comptime config: Config) type {
 
             fn clockPulse(_: AdapterSelf) u1 {
                 chip.gpio.writeOutput(config.tck, 0);
-                var t = clock.currentMicrotick().plus(.{ .ticks = clock_half_period_microticks });
-                clock.blockUntilMicrotick(t);
+                var t = Microtick.now().plus(.{ .ticks = clock_half_period_microticks });
+                chip.clocks.blockUntilMicrotick(t);
                 const bit = chip.gpio.readInput(config.tdo);
                 chip.gpio.writeOutput(config.tck, 1);
                 t = t.plus(.{ .ticks = clock_half_period_microticks });
-                clock.blockUntilMicrotick(t);
+                chip.clocks.blockUntilMicrotick(t);
                 return bit;
             }
 

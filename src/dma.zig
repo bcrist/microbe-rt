@@ -1,7 +1,8 @@
 const std = @import("std");
 const builtin = @import("builtin");
+const chip = @import("root").chip;
 
-pub const Channel = @import("chip").dma.Channel;
+pub const Channel = chip.dma.Channel;
 
 pub const reserve = impl.reserve;
 pub const release = impl.release;
