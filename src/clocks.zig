@@ -29,7 +29,7 @@ const chip = @import("root").chip;
 ///
 /// For most devices this is driven by an interrupt and may be disabled in at least
 /// some low power/sleep modes.
-const Tick = enum (i32) {
+pub const Tick = enum (i32) {
     _,
 
     pub fn now() Tick {
