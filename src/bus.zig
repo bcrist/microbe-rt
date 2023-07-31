@@ -166,7 +166,7 @@ pub fn Bus(comptime bus_name: []const u8, comptime pads_struct: anytype, comptim
                     }
                 }
                 pub inline fn modifyInline(state: State) void {
-                    @call(.{ .modifier = .always_inline }, modify, .{state});
+                    @call(.always_inline, modify, .{state});
                 }
 
                 pub fn setBits(state: State) void {
@@ -189,7 +189,7 @@ pub fn Bus(comptime bus_name: []const u8, comptime pads_struct: anytype, comptim
                     }
                 }
                 pub inline fn setBitsInline(state: State) void {
-                    @call(.{ .modifier = .always_inline }, setBits, .{state});
+                    @call(.always_inline, setBits, .{state});
                 }
 
                 pub fn clearBits(state: State) void {
@@ -212,7 +212,7 @@ pub fn Bus(comptime bus_name: []const u8, comptime pads_struct: anytype, comptim
                     }
                 }
                 pub inline fn clearBitsInline(state: State) void {
-                    @call(.{ .modifier = .always_inline }, clearBits, .{state});
+                    @call(.always_inline, clearBits, .{state});
                 }
             } else struct {};
         };
