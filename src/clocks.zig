@@ -74,7 +74,7 @@ pub const Microtick = enum (i64) {
     }
 };
 
-fn parseDuration(comptime T: type, comptime time: anytype, tick_frequency_hz: comptime_int) T {
+fn parseDuration(comptime T: type, comptime time: anytype, comptime tick_frequency_hz: comptime_int) T {
     var extra: T = 0;
     const time_info = @typeInfo(@TypeOf(time));
     inline for (time_info.Struct.fields) |field| {
