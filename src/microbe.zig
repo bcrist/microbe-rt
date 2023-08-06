@@ -2,6 +2,7 @@ const std = @import("std");
 const builtin = @import("builtin");
 const root = @import("root");
 
+pub const Mmio = @import("mmio.zig").Mmio;
 const clocks = @import("clocks.zig");
 pub const Tick = clocks.Tick;
 pub const Microtick = clocks.Microtick;
